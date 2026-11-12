@@ -1,0 +1,24 @@
+
+flowchart TD
+    A["User Preferences<br/>Genre, Mood, Energy, Acoustic"] --> B["Input Validation"]
+
+    B --> C{"Valid Input?"}
+    C -->|No| D["Error Handling & Logging"]
+    C -->|Yes| E["Recommendation Engine"]
+
+    F[("Song Dataset<br/>songs.csv")] --> G["CSV Loader"]
+    G --> H["Song Validation"]
+    H --> E
+    H -->|Invalid Data| D
+
+    E --> I["Content-Based Scoring"]
+    I --> J["Rank Songs by Score"]
+    J --> K["Generate Explanations"]
+    K --> L["Top-K Personalized Recommendations"]
+
+    M["Automated Tests<br/>pytest"] --> N["Reliability Evaluator"]
+    N --> E
+    N --> O["Pass/Fail Results"]
+    O --> P["Evaluation Report"]
+
+    Q["Human Review"] --> P
