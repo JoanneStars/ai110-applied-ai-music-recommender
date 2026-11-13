@@ -355,4 +355,4 @@ Ultimately, this project reinforced an important principle: a useful AI-related 
 
 **Developer:** Joanne Jongeling  
 **Course:** CodePath AI110  
-**Project:** Applied AI Music Recommender git add model_card.md
+**Project:** Applied AI Music Recommender
