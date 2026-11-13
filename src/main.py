@@ -1,14 +1,22 @@
 
-"""VibeMatch Fusion | Cross-platform-ready music discovery dashboard.
+"""VibeMatch Fusion | Dual-Engine Music Discovery Dashboard.
 
-The active recommendation backend is the deterministic Python baseline.
-ML and native C++ backends can be added later without misrepresenting them.
+Cross-platform-ready Streamlit interface with:
+- Validated content-based recommendation engine
+- Portable nearest-neighbor similarity engine
+- Explainable song rankings
+- Interactive feature telemetry
+- Futuristic galaxy-inspired interface
+
+The nearest-neighbor engine uses pure Python, not scikit-learn.
 """
 
+from dataclasses import asdict
 from pathlib import Path
 
 import streamlit as st
 
+from src.ai_engine import MusicAIEngine
 from src.recommender import (
     MAX_SCORE,
     Recommender,
@@ -19,7 +27,11 @@ from src.recommender import (
 )
 
 
-DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "songs.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "songs.csv"
+
+BASELINE = "Python Baseline"
+FUSION = "Fusion Nearest Neighbor"
 
 
 st.set_page_config(
@@ -31,20 +43,23 @@ st.set_page_config(
 
 
 @st.cache_data(show_spinner=False)
-def load_catalog() -> list[dict]:
-    """Load and validate the local CSV catalog."""
+def get_songs():
+    """Load the validated local song catalog."""
     return load_songs(str(DATA_PATH))
 
 
-def apply_styles() -> None:
-    """Render the galaxy theme, hologram, and interface styling."""
+def apply_styles():
+    """Apply the futuristic galaxy dashboard theme."""
+
     st.markdown(
         """
         <style>
         :root {
-            color-scheme: dark;
             --violet: #a883ff;
             --cyan: #69e7ff;
+            --pink: #ec8cff;
+            --white: #f4f2ff;
+            --muted: #b8bfdc;
         }
 
         html, body, [class*="css"] {
@@ -57,17 +72,17 @@ def apply_styles() -> None:
 
         .stApp {
             isolation: isolate;
-            color: #f2efff;
+            color: #f4f2ff;
             background:
                 radial-gradient(
                     ellipse at 20% 15%,
-                    #38205a 0%,
-                    transparent 38%
+                    rgba(95, 38, 153, 0.42),
+                    transparent 40%
                 ),
                 radial-gradient(
                     ellipse at 85% 75%,
-                    #123b6b 0%,
-                    transparent 43%
+                    rgba(19, 84, 155, 0.37),
+                    transparent 45%
                 ),
                 linear-gradient(
                     135deg,
@@ -89,11 +104,11 @@ def apply_styles() -> None:
         .block-container {
             position: relative;
             max-width: 1250px;
-            padding-top: 1.25rem !important;
+            padding-top: 1.2rem !important;
             padding-bottom: 3rem;
         }
 
-        /* Animated starfield */
+        /* GALAXY BACKGROUND */
 
         .stApp::before {
             content: "";
@@ -106,7 +121,7 @@ def apply_styles() -> None:
             background-image:
                 radial-gradient(
                     1px 1px at 15% 20%,
-                    white,
+                    #ffffff,
                     transparent
                 ),
                 radial-gradient(
@@ -116,7 +131,7 @@ def apply_styles() -> None:
                 ),
                 radial-gradient(
                     1px 1px at 75% 32%,
-                    white,
+                    #ffffff,
                     transparent
                 ),
                 radial-gradient(
@@ -126,7 +141,7 @@ def apply_styles() -> None:
                 );
 
             background-size: 325px 325px;
-            animation: stars 75s linear infinite;
+            animation: starMotion 75s linear infinite;
         }
 
         .stApp::after {
@@ -140,32 +155,32 @@ def apply_styles() -> None:
             background:
                 radial-gradient(
                     ellipse at 30% 35%,
-                    #9e3ddd35,
+                    rgba(158, 61, 221, 0.22),
                     transparent 42%
                 ),
                 radial-gradient(
                     ellipse at 72% 66%,
-                    #1d98d72e,
+                    rgba(29, 152, 215, 0.20),
                     transparent 40%
                 );
 
             animation:
-                nebula 27s ease-in-out infinite alternate;
+                nebulaMotion 27s ease-in-out infinite alternate;
         }
 
-        @keyframes stars {
+        @keyframes starMotion {
             to {
                 transform: translate3d(-110px, 90px, 0);
             }
         }
 
-        @keyframes nebula {
+        @keyframes nebulaMotion {
             to {
                 transform: rotate(9deg) scale(1.13);
             }
         }
 
-        /* Typography */
+        /* HEADER */
 
         .vm-eyebrow {
             color: #86e9ff;
@@ -195,22 +210,35 @@ def apply_styles() -> None:
 
         .vm-lede {
             color: #c4c7df;
-            max-width: 660px;
+            max-width: 700px;
             line-height: 1.8;
             font-size: 0.96rem;
             font-weight: 300;
         }
 
-        /* Sidebar */
+        .vm-engine-label {
+            color: #8be8ff;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-size: 0.73rem;
+            font-weight: 600;
+        }
+
+        /* SIDEBAR */
 
         section[data-testid="stSidebar"] {
-            background: #080d22f5;
-            border-right: 1px solid #a784ff30;
+            background: rgba(8, 13, 34, 0.97);
+            border-right: 1px solid rgba(167, 132, 255, 0.20);
         }
 
         section[data-testid="stSidebar"] label,
         section[data-testid="stSidebar"] p {
             color: #eeeaff !important;
+        }
+
+        section[data-testid="stSidebar"] h1,
+        section[data-testid="stSidebar"] h2 {
+            color: #ffffff !important;
         }
 
         [data-baseweb="select"] > div {
@@ -223,23 +251,19 @@ def apply_styles() -> None:
             color: #f2eeff !important;
         }
 
-        /* Violet sliders */
+        /* SLIDERS */
 
         [data-testid="stSlider"] div[role="slider"] {
             background-color: #ae83ff !important;
             border-color: #ae83ff !important;
         }
 
-        [data-testid="stSlider"] div[data-testid="stTickBar"] {
-            color: #c8b7ef;
-        }
-
-        /* Glass panels */
+        /* CARDS */
 
         [data-testid="stMetric"],
         [data-testid="stVerticalBlockBorderWrapper"] {
-            background: #11172cbd;
-            border: 1px solid #a08bff42;
+            background: rgba(17, 23, 44, 0.76);
+            border: 1px solid rgba(160, 139, 255, 0.26);
             border-radius: 16px;
             backdrop-filter: blur(14px);
         }
@@ -248,16 +272,20 @@ def apply_styles() -> None:
             padding: 1rem;
         }
 
+        [data-testid="stMetricLabel"] {
+            color: #c4c6e7 !important;
+        }
+
         [data-testid="stMetricValue"] {
-            color: #ffffff;
+            color: #ffffff !important;
             font-weight: 350;
         }
 
-        /* Primary action */
+        /* BUTTON */
 
         .stButton button[kind="primary"] {
             color: #ffffff !important;
-            border: 1px solid #c4a0ff66;
+            border: 1px solid rgba(196, 160, 255, 0.4);
             border-radius: 12px;
             font-weight: 600;
 
@@ -271,11 +299,7 @@ def apply_styles() -> None:
 
             background-size: 300% 100%;
             animation: buttonGlow 9s linear infinite;
-            box-shadow: 0 0 22px #8a50e84c;
-        }
-
-        .stButton button[kind="primary"]:hover {
-            box-shadow: 0 0 32px #a36aff88;
+            box-shadow: 0 0 22px rgba(138, 80, 232, 0.30);
         }
 
         @keyframes buttonGlow {
@@ -284,10 +308,10 @@ def apply_styles() -> None:
             }
         }
 
-        /* Holographic orb */
+        /* HOLOGRAPHIC ORB */
 
         .vm-orb-stage {
-            height: 255px;
+            height: 270px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -312,9 +336,9 @@ def apply_styles() -> None:
                 );
 
             box-shadow:
-                0 0 42px #a456ff88,
-                0 0 95px #258bd844,
-                inset -20px -24px 35px #02051dbb;
+                0 0 42px rgba(164, 86, 255, 0.55),
+                0 0 95px rgba(37, 139, 216, 0.28),
+                inset -20px -24px 35px rgba(2, 5, 29, 0.75);
 
             animation:
                 orbFloat 6s ease-in-out infinite,
@@ -325,21 +349,21 @@ def apply_styles() -> None:
             position: absolute;
             inset: -22px;
             border-radius: 50%;
-            border: 1px solid #c39affb0;
+            border: 1px solid rgba(195, 154, 255, 0.7);
             transform-style: preserve-3d;
             animation: orbit 13s linear infinite;
         }
 
         .vm-ring.second {
             inset: -38px;
-            border-color: #83e9ff88;
+            border-color: rgba(131, 233, 255, 0.55);
             animation-duration: 19s;
             animation-direction: reverse;
         }
 
         .vm-ring.third {
             inset: -10px;
-            border-color: #ef8aff88;
+            border-color: rgba(239, 138, 255, 0.55);
             animation-duration: 10s;
         }
 
@@ -357,24 +381,24 @@ def apply_styles() -> None:
 
         @keyframes orbit {
             from {
-                transform:
-                    rotateZ(0deg) rotateX(67deg);
+                transform: rotateZ(0deg) rotateX(67deg);
             }
-
             to {
-                transform:
-                    rotateZ(360deg) rotateX(67deg);
+                transform: rotateZ(360deg) rotateX(67deg);
             }
         }
 
-        .vm-note {
+        /* TEXT */
+
+        .vm-footer {
             font-size: 0.76rem;
             color: #aab3d5;
             text-align: center;
             margin-top: 2rem;
+            line-height: 1.8;
         }
 
-        /* Reduced motion accessibility */
+        /* ACCESSIBILITY */
 
         @media (prefers-reduced-motion: reduce) {
             .stApp::before,
@@ -391,12 +415,13 @@ def apply_styles() -> None:
     )
 
 
-def render_header() -> None:
-    """Display the application branding."""
+def render_header():
+    """Display the VibeMatch Fusion title."""
+
     st.markdown(
         """
         <div class="vm-eyebrow">
-            SONIC INTELLIGENCE / HYBRID-READY
+            SONIC INTELLIGENCE / DUAL-ENGINE DISCOVERY
         </div>
 
         <h1 class="vm-title">
@@ -404,27 +429,29 @@ def render_header() -> None:
         </h1>
 
         <p class="vm-lede">
-            Music discovery with transparent ranking,
-            validated data, and a feature-vector foundation
-            for future machine learning and C++ acceleration.
+            Explore music through transparent content-based
+            scoring and numerical nearest-neighbor similarity.
+            Two recommendation engines. One intelligent
+            discovery interface.
         </p>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_orb(energy: float) -> None:
-    """Animate the hologram based on selected energy."""
-    pulse_seconds = 5.0 - energy * 3.0
+def render_orb(energy):
+    """Display an energy-responsive holographic sphere."""
+
+    pulse = 5.0 - energy * 3.0
 
     st.markdown(
         f"""
         <div class="vm-orb-stage">
             <div
                 class="vm-orb"
-                style="--pulse: {pulse_seconds:.2f}s;"
+                style="--pulse: {pulse:.2f}s;"
                 role="img"
-                aria-label="Animated holographic music energy sphere"
+                aria-label="Animated music energy hologram"
             >
                 <div class="vm-ring"></div>
                 <div class="vm-ring second"></div>
@@ -438,14 +465,24 @@ def render_orb(energy: float) -> None:
 
 def render_recommendations(
     results,
-    show_vectors: bool,
-) -> None:
-    """Display songs, relevance scores, and explanations."""
+    engine_name,
+    show_vectors,
+):
+    """Render ranked recommendations for either engine."""
+
     st.subheader("Your Sonic Matches")
 
+    st.markdown(
+        f'<div class="vm-engine-label">'
+        f'ACTIVE ENGINE / {engine_name}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
     st.caption(
-        "Validated Python scoring baseline. "
-        "Relevance scores are not probabilities."
+        "Scores represent algorithmic relevance, "
+        "not statistical confidence or probabilities. "
+        "Scores from different engines are not directly comparable."
     )
 
     for rank, result in enumerate(results, start=1):
@@ -459,7 +496,9 @@ def render_recommendations(
                     f"### {rank:02d} / {song.title}"
                 )
 
-                st.write(f"**Artist:** {song.artist}")
+                st.write(
+                    f"**Artist:** {song.artist}"
+                )
 
                 st.write(
                     f"**Genre:** {song.genre} · "
@@ -472,55 +511,64 @@ def render_recommendations(
                     f"{result.score:.2f} / {MAX_SCORE:.2f}",
                 )
 
-            st.progress(result.relevance)
+            st.progress(
+                min(max(result.relevance, 0.0), 1.0)
+            )
 
             with st.expander("Explore match analysis"):
                 for reason in result.reasons:
                     st.write(f"• {reason}")
 
                 st.write(
-                    f"Energy: {song.energy:.2f} · "
+                    f"Energy: {song.energy:.2f}"
+                )
+
+                st.write(
                     f"Acousticness: {song.acousticness:.2f}"
                 )
 
                 if show_vectors:
-                    vector = extract_features(vars(song))
+                    features = extract_features(
+                        asdict(song)
+                    )
 
                     st.caption(
-                        "NUMERICAL FEATURE VECTOR"
+                        "NUMERICAL FEATURE TELEMETRY"
                     )
 
                     st.code(
-                        "[energy, valence, "
-                        "danceability, acousticness]\n"
+                        "Energy · Valence · Danceability "
+                        "· Acousticness\n"
                         + str(
                             tuple(
                                 round(value, 3)
-                                for value in vector
+                                for value in features
                             )
                         ),
                         language="text",
                     )
 
 
-def main() -> None:
-    """Run the Streamlit dashboard."""
+def main():
+    """Run the dual-engine Streamlit application."""
+
     apply_styles()
     render_header()
 
     try:
-        catalog = load_catalog()
+        catalog = get_songs()
 
         songs = [
             Song(**record)
             for record in catalog
         ]
 
-        recommender = Recommender(songs)
+        baseline_engine = Recommender(songs)
+        fusion_engine = MusicAIEngine(songs)
 
     except (OSError, KeyError, TypeError, ValueError) as error:
         st.error(
-            f"Unable to load the music catalog: {error}"
+            f"Unable to initialize VibeMatch Fusion: {error}"
         )
         st.stop()
 
@@ -533,6 +581,21 @@ def main() -> None:
 
         st.caption(
             "PERSONALIZE YOUR FREQUENCY"
+        )
+
+        st.divider()
+
+        engine_mode = st.radio(
+            "Recommendation Engine",
+            options=[
+                BASELINE,
+                FUSION,
+            ],
+            index=0,
+            help=(
+                "Choose between fixed content-based scoring "
+                "and portable nearest-neighbor similarity."
+            ),
         )
 
         st.divider()
@@ -570,10 +633,6 @@ def main() -> None:
         show_vectors = st.checkbox(
             "Show Feature Telemetry",
             value=False,
-            help=(
-                "Display numeric features prepared "
-                "for future ML and C++ integration."
-            ),
         )
 
         generate = st.button(
@@ -585,41 +644,36 @@ def main() -> None:
         st.divider()
 
         st.caption(
-            "ACTIVE ENGINE · VALIDATED PYTHON BASELINE"
+            f"ACTIVE ENGINE · {engine_mode.upper()}"
         )
 
         st.caption(
-            "ML and C++ backends are not enabled yet."
+            "Portable Python computation. "
+            "Native C++ acceleration is not enabled."
         )
 
     st.divider()
 
-    left, middle, right = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-    left.metric(
+    col1.metric(
         "AVAILABLE TRACKS",
         len(songs),
     )
 
-    middle.metric(
+    col2.metric(
         "GENRE CHANNELS",
         len({song.genre for song in songs}),
     )
 
-    right.metric(
+    col3.metric(
         "MOOD PROFILES",
         len({song.mood for song in songs}),
     )
 
     render_orb(energy)
 
-    if not generate:
-        st.info(
-            "Select your preferences, then click "
-            "'Discover My Music'."
-        )
-        return
-
+    # Preserve the latest results during ordinary Streamlit reruns.
     profile = UserProfile(
         favorite_genre=genre,
         favorite_mood=mood,
@@ -627,15 +681,40 @@ def main() -> None:
         likes_acoustic=acoustic,
     )
 
-    try:
-        results = recommender.recommend_detailed(
-            profile,
-            k=limit,
+    selection = (
+        engine_mode,
+        genre,
+        mood,
+        energy,
+        acoustic,
+        limit,
+    )
+
+    if generate:
+        st.session_state["vm_selection"] = selection
+
+    if st.session_state.get("vm_selection") != selection:
+        st.info(
+            "Select your preferences and click "
+            "'Discover My Music' to generate recommendations."
         )
+        return
+
+    try:
+        if engine_mode == FUSION:
+            results = fusion_engine.recommend(
+                profile,
+                k=limit,
+            )
+        else:
+            results = baseline_engine.recommend_detailed(
+                profile,
+                k=limit,
+            )
 
     except (TypeError, ValueError) as error:
         st.error(
-            f"Recommendation validation failed: {error}"
+            f"Recommendation error: {error}"
         )
         return
 
@@ -647,18 +726,21 @@ def main() -> None:
 
     render_recommendations(
         results,
+        engine_mode,
         show_vectors,
     )
 
     st.markdown(
         """
-        <p class="vm-note">
-            Deterministic content-based scoring ·
-            Validated preferences · No live audio analysis
+        <div class="vm-footer">
+            VIBEMATCH FUSION / SONIC INTELLIGENCE
             <br>
-            Machine learning and native C++ integration
-            are planned future enhancements.
-        </p>
+            Explainable ranking · Validated inputs ·
+            Portable similarity computation
+            <br>
+            Educational recommendation system ·
+            No live audio analysis
+        </div>
         """,
         unsafe_allow_html=True,
     )
