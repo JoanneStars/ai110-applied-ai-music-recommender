@@ -1,0 +1,29 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Joann\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Joann\OneDrive\Documents\GitHub\ai110-applied-ai-music-recommender
+plugins: anyio-4.14.2
+collecting ... collected 20 items
+
+src/tests/test_evaluator.py::test_catalog_contains_valid_songs PASSED    [  5%]
+src/tests/test_evaluator.py::test_evaluator_returns_six_results PASSED   [ 10%]
+src/tests/test_evaluator.py::test_evaluator_checks_pass PASSED           [ 15%]
+src/tests/test_evaluator.py::test_recommendation_ranking[pop-happy-0.9-1] PASSED [ 20%]
+src/tests/test_evaluator.py::test_recommendation_ranking[lofi-chill-0.3-2] PASSED [ 25%]
+src/tests/test_evaluator.py::test_recommendation_ranking[rock-intense-0.95-3] PASSED [ 30%]
+src/tests/test_evaluator.py::test_evaluator_prints_summary PASSED        [ 35%]
+src/tests/test_evaluator.py::test_evaluator_handles_zero_recommendations PASSED [ 40%]
+tests/test_guardrails.py::test_valid_profile PASSED                      [ 45%]
+tests/test_guardrails.py::test_invalid_energy[-0.1] PASSED               [ 50%]
+tests/test_guardrails.py::test_invalid_energy[1.5] PASSED                [ 55%]
+tests/test_guardrails.py::test_invalid_energy[nan] PASSED                [ 60%]
+tests/test_guardrails.py::test_missing_genre PASSED                      [ 65%]
+tests/test_guardrails.py::test_invalid_song_data PASSED                  [ 70%]
+tests/test_guardrails.py::test_invalid_acoustic_preference PASSED        [ 75%]
+tests/test_guardrails.py::test_negative_recommendation_limit PASSED      [ 80%]
+tests/test_recommender.py::test_recommend_returns_songs_sorted_by_score PASSED [ 85%]
+tests/test_recommender.py::test_explain_recommendation_returns_non_empty_string PASSED [ 90%]
+tests/test_recommender.py::test_recommend_respects_k_limit PASSED        [ 95%]
+tests/test_recommender.py::test_recommend_with_zero_k PASSED             [100%]
+
+============================= 20 passed in 0.03s ==============================

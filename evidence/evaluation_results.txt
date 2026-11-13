@@ -1,0 +1,12 @@
+﻿
+MUSIC RECOMMENDER - RELIABILITY REPORT
+---------------------------------------------
+[PASS] Pop preference: Correct top recommendation
+[PASS] Lofi preference: Correct top recommendation
+[PASS] Rock preference: Correct top recommendation
+[PASS] Zero-result handling: Check passed
+[PASS] Recommendation limit: Check passed
+[PASS] Explanation quality: Check passed
+---------------------------------------------
+Tests passed: 6/6
+Pass rate: 100%
