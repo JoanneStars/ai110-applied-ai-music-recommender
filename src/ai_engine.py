@@ -1,200 +1,101 @@
+"""VibeMatch Fusion: portable, similarity-based music recommendation.
 
-"""VibeMatch Fusion | Portable Nearest-Neighbor Recommendation Engine.
-
-Uses weighted feature vectors and Euclidean distance to recommend
-similar songs without NumPy or scikit-learn.
-
-Compatible with Python 3.13 and designed for future C++ integration.
+Uses Python's standard library, with no scikit-learn or native DLLs.
+This is a nearest-neighbor algorithm, not a fitted predictive model.
 """
 
-import math
 from dataclasses import asdict
+from math import sqrt
 from typing import Sequence
+
+from src.native_distance import DistanceBackend
 
 from src.recommender import (
     MAX_SCORE,
     RecommendationResult,
     Song,
     UserProfile,
+    extract_features,
     validate_preferences,
     validate_song,
 )
 
 
 class MusicAIEngine:
-    """Generate music recommendations using feature similarity."""
+    """Rank songs using weighted distances in a musical feature space."""
 
     def __init__(self, songs: Sequence[Song]):
-        """Validate songs and construct the feature-vector index."""
         if not songs:
-            raise ValueError("The music catalog must not be empty.")
+            raise ValueError("The music catalog cannot be empty.")
 
         self.songs = list(songs)
-
+        self.backend = DistanceBackend()
+        self.vectors = []
         for song in self.songs:
-            if not isinstance(song, Song):
-                raise TypeError("Catalog entries must be Song objects.")
-            validate_song(asdict(song))
+            data = asdict(song)
+            validate_song(data)
+            self.vectors.append(extract_features(data))
 
-        self.genres = sorted({
-            song.genre.casefold().strip()
-            for song in self.songs
-        })
+    def _distance(self, user: UserProfile, song: Song, vector: tuple) -> float:
+        """Combine genre/mood mismatch and numerical feature distance."""
+        energy, _valence, _danceability, acousticness = vector
+        target_acousticness = 1.0 if user.likes_acoustic else 0.0
 
-        self.moods = sorted({
-            song.mood.casefold().strip()
-            for song in self.songs
-        })
-
-        self.genre_index = {
-            value: index
-            for index, value in enumerate(self.genres)
-        }
-
-        self.mood_index = {
-            value: index
-            for index, value in enumerate(self.moods)
-        }
-
-        self.catalog_vectors = [
-            self._song_vector(song)
-            for song in self.songs
-        ]
-
-    def _vector(
-        self,
-        genre: str,
-        mood: str,
-        energy: float,
-        acoustic: float,
-    ) -> tuple[float, ...]:
-        """Encode categorical and numerical music features."""
-        vector = [
-            0.0
-            for _ in range(
-                len(self.genres) + len(self.moods) + 2
-            )
-        ]
-
-        genre_index = self.genre_index.get(
-            genre.casefold().strip()
+        genre_mismatch = (
+            0.0 if song.genre.casefold() == user.favorite_genre.casefold()
+            else 1.0
+        )
+        mood_mismatch = (
+            0.0 if song.mood.casefold() == user.favorite_mood.casefold()
+            else 1.0
         )
 
-        mood_index = self.mood_index.get(
-            mood.casefold().strip()
-        )
-
-        if genre_index is not None:
-            vector[genre_index] = math.sqrt(2.0)
-
-        if mood_index is not None:
-            vector[len(self.genres) + mood_index] = 1.0
-
-        vector[-2] = energy
-        vector[-1] = math.sqrt(0.5) * acoustic
-
-        return tuple(vector)
-
-    def _song_vector(
-        self,
-        song: Song,
-    ) -> tuple[float, ...]:
-        """Encode the features of one song."""
-        return self._vector(
-            song.genre,
-            song.mood,
-            song.energy,
-            song.acousticness,
-        )
-
-    @staticmethod
-    def _distance(
-        first: tuple[float, ...],
-        second: tuple[float, ...],
-    ) -> float:
-        """Calculate Euclidean distance between two feature vectors."""
-        if len(first) != len(second):
-            raise ValueError("Feature vector dimensions must match.")
-
-        return math.sqrt(
-            sum(
-                (a - b) ** 2
-                for a, b in zip(first, second)
-            )
+        # Only user-selected features influence numerical distance.
+        # Valence and danceability are stored for future preference controls.
+        return self.backend.distance(
+            (
+                2.0 * genre_mismatch,
+                sqrt(2.0) * mood_mismatch,
+                energy,
+                0.5 * acousticness,
+            ),
+            (
+                0.0,
+                0.0,
+                user.target_energy,
+                0.5 * target_acousticness,
+            ),
         )
 
     def recommend(
-        self,
-        user: UserProfile,
-        k: int = 5,
+        self, user: UserProfile, k: int = 5
     ) -> list[RecommendationResult]:
-        """Return ranked song matches with transparent explanations."""
-        if not isinstance(user, UserProfile):
-            raise TypeError("user must be a UserProfile instance.")
-
-        validate_preferences(asdict(user))
-
-        if isinstance(k, bool) or not isinstance(k, int):
-            raise TypeError("k must be an integer.")
-
+        """Return k nearest songs with normalized relevance and explanations."""
+        if not isinstance(k, int) or isinstance(k, bool):
+            raise ValueError("k must be an integer.")
         if k <= 0:
             return []
 
-        query = self._vector(
-            user.favorite_genre,
-            user.favorite_mood,
-            user.target_energy,
-            1.0 if user.likes_acoustic else 0.0,
-        )
-
+        validate_preferences(asdict(user))
         ranked = []
-
-        for song, vector in zip(
-            self.songs,
-            self.catalog_vectors,
-        ):
-            distance = self._distance(query, vector)
-            ranked.append((distance, song))
-
-        ranked.sort(
-            key=lambda entry: (entry[0], entry[1].id)
-        )
-
-        results = []
-
-        for distance, song in ranked[:k]:
-            score = round(
-                MAX_SCORE / (1.0 + distance),
-                4,
-            )
-
+        for song, vector in zip(self.songs, self.vectors):
+            distance = self._distance(user, song, vector)
+            relevance = 1.0 / (1.0 + distance)
+            score = round(MAX_SCORE * relevance, 4)
             reasons = [
-                "Nearest-neighbor feature matching",
-                f"Feature distance: {distance:.3f} (lower is closer)",
-                (
-                    "Genre matched"
-                    if song.genre.casefold()
-                    == user.favorite_genre.casefold()
-                    else "Genre differs"
-                ),
-                (
-                    "Mood matched"
-                    if song.mood.casefold()
-                    == user.favorite_mood.casefold()
-                    else "Mood differs"
-                ),
-                (
-                    "Energy difference: "
-                    f"{abs(song.energy - user.target_energy):.2f}"
-                ),
+                f"Computation backend: {self.backend.backend}",
+                f"Similarity distance: {distance:.3f}",
+                f"Energy difference: {abs(song.energy - user.target_energy):.2f}",
             ]
-
-            results.append(
-                RecommendationResult(
-                    song=song,
-                    score=score,
-                    reasons=reasons,
-                )
+            if song.genre.casefold() == user.favorite_genre.casefold():
+                reasons.append("Genre match")
+            if song.mood.casefold() == user.favorite_mood.casefold():
+                reasons.append("Mood match")
+            reasons.append(
+                "Acoustic preference: "
+                + ("acoustic" if user.likes_acoustic else "non-acoustic")
             )
+            ranked.append((distance, RecommendationResult(song, score, reasons)))
 
-        return results
+        ranked.sort(key=lambda item: item[0])
+        return [result for _, result in ranked[:k]]
