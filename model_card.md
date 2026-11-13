@@ -1,20 +1,19 @@
+
 # Model Card: VibeMatch Music Recommender
 
 **Project:** Applied AI Music Recommender  
-**Version:** 2.0  
+**Version:** 2.0 — Galaxy Interface  
 **Developer:** Joanne Jongeling  
 **Course:** CodePath AI110  
-**Language:** Python 3.13
+**Technologies:** Python 3.13, Streamlit, pytest, CSV, Mermaid
 
----
+## 1. System Overview
 
-## 1. Model Overview
+VibeMatch is a content-based music recommendation system that generates personalized song suggestions using listener preferences and musical attributes.
 
-VibeMatch is a content-based music recommendation system that generates personalized song recommendations using listener preferences and audio characteristics.
+Originally developed during CodePath AI110 Module 3, the application was extended into a more reliable, testable, and interactive applied AI system.
 
-Originally developed during CodePath AI110 Module 3, the application was extended into a more reliable and testable applied AI system.
-
-The current version includes:
+The final project includes:
 
 - Content-based recommendation scoring
 - Personalized song ranking
@@ -23,65 +22,62 @@ The current version includes:
 - Diagnostic logging
 - Automated reliability evaluation
 - Unit testing with pytest
+- Interactive Streamlit dashboard
+- Animated galaxy-inspired interface
 
-VibeMatch is a deterministic, rule-based recommender rather than a trained machine-learning model. Its advanced system component focuses on reliability evaluation and validation.
+VibeMatch is a deterministic, rule-based recommender rather than a trained machine-learning or generative AI model.
 
 ## 2. Intended Use
 
-VibeMatch is designed for educational demonstrations of recommendation algorithms, feature weighting, explainable decisions, and software reliability.
+VibeMatch demonstrates how recommendation systems transform user preferences into numerical scores and ranked results.
 
-The system accepts listener preferences, compares them against a catalog of songs, calculates numerical relevance scores, and returns ranked recommendations.
+Users can select:
 
-**Intended users:** Students, educators, and developers studying applied AI systems.
+- Favorite music genre
+- Preferred mood
+- Target energy level
+- Acoustic music preference
+- Number of recommendations
 
-**Not intended for:** Production music streaming services, behavioral profiling, or high-stakes automated decisions.
+The system is intended for education, software engineering demonstrations, and experimentation with recommendation algorithms.
 
-## 3. System Architecture
+It is not designed for production streaming services, behavioral profiling, or high-stakes decision-making.
 
-The application separates recommendation logic from evaluation and testing.
+## 3. Recommendation Algorithm
 
-**Recommendation workflow:**
+The recommendation engine is implemented in `src/recommender.py`.
 
-1. Receive listener preferences.
-2. Validate preferences and song attributes.
-3. Calculate content-based relevance scores.
-4. Rank songs from highest to lowest score.
-5. Return personalized recommendations.
-6. Generate explanations for recommendation scores.
-
-**Reliability workflow:**
-
-1. Create controlled test profiles and song catalogs.
-2. Execute recommendation and validation checks.
-3. Compare results against expected behavior.
-4. Record pass/fail outcomes.
-5. Generate an evaluation summary.
-
-The architecture is documented in `diagrams/architecture.mmd`.
+It compares listener preferences against song characteristics and assigns relevance scores.
 
 ### Current Scoring Weights
 
-| Feature | Maximum points |
+| Feature | Maximum Points |
 |---|---:|
 | Genre match | 2.0 |
 | Mood match | 1.0 |
 | Energy similarity | 1.0 |
 | Acoustic preference | 0.5 |
-| **Maximum total** | **4.5** |
+| **Maximum Score** | **4.5** |
 
-The engine uses fixed weighting rules.
+Energy similarity is calculated using:
 
-Energy similarity is calculated from the difference between the song's energy and the listener's target energy.
+`max(0, 1 - abs(song_energy - target_energy))`
 
-The acoustic preference rewards higher or lower acousticness depending on the user's selected preference.
+Acoustic preference scoring rewards higher acousticness when the listener prefers acoustic music and lower acousticness otherwise.
 
-Although the song dataset also contains valence, danceability, and tempo values, these attributes do not currently influence ranking.
+The recommender calculates scores, sorts songs by relevance, and returns the highest-ranked results.
+
+Scores represent relevance, not statistical probabilities or measured recommendation accuracy.
+
+Tempo, valence, and danceability are stored in the dataset but do not currently contribute directly to the ranking formula.
 
 ## 4. Dataset
 
-The dataset contains 15 songs representing different genres, moods, and musical characteristics.
+The dataset contains 15 songs with different musical attributes.
 
-During Module 3, I expanded the original catalog from 10 to 15 songs by adding:
+During Module 3, I expanded the original catalog from 10 songs to 15 songs.
+
+### Songs Added
 
 | Song | Genre | Mood |
 |---|---|---|
@@ -91,98 +87,139 @@ During Module 3, I expanded the original catalog from 10 to 15 songs by adding:
 | Neon Bounce | Hip-Hop | Confident |
 | Ocean Dreams | Reggae | Relaxed |
 
-The data includes song titles, artists, genres, moods, energy, tempo, valence, danceability, and acousticness.
+Each song contains:
 
-The catalog is small and intended for controlled experimentation rather than real-world recommendation accuracy.
+- ID
+- Title
+- Artist
+- Genre
+- Mood
+- Energy
+- Tempo
+- Valence
+- Danceability
+- Acousticness
 
-It does not contain personal listening histories, behavioral tracking, or private user information.
+The dataset is intentionally small for controlled experimentation.
 
-## 5. Previous Experiments
+It does not include listening history, personal information, or real-time streaming data.
 
-During Module 3, I investigated how changes to scoring weights affected recommendation rankings.
+## 5. Previous Scoring Experiments
 
-| Feature | Original experimental baseline | Modified experiment |
+During Module 3, I experimented with feature weights to examine how they affected recommendations.
+
+| Feature | Original Experimental Weight | Modified Weight |
 |---|---:|---:|
 | Genre | 2.0 | 1.0 |
 | Energy | 1.5 | 3.0 |
 
-Increasing the energy weight made songs with similar energy characteristics more competitive, even when their genres differed from the user's preference.
+Increasing energy importance made songs with similar energy levels more competitive, even when their genres differed from user preferences.
 
-For example, Storm Runner, a rock song, appeared in High-Energy Pop recommendations because its energy level closely matched the target.
+For example, Storm Runner appeared in High-Energy Pop recommendations despite being classified as rock.
 
-The experiment demonstrated that feature weighting can significantly influence recommendation outcomes.
+This demonstrated how changes to feature weights influence recommendation rankings.
 
-These weights describe the earlier experiment, not the current refactored implementation.
+These experimental weights are historical and are not the weights used in the current refactored system.
 
-The final engine uses the more balanced scoring configuration documented in Section 3.
+## 6. Interactive Streamlit Dashboard
 
-## 6. Strengths
+The final project includes an interactive application implemented in `src/main.py`.
 
-**Explainability**
+The dashboard provides a user-friendly interface for selecting preferences and reviewing personalized recommendations.
 
-Each recommendation can be accompanied by an explanation describing the factors contributing to its score.
+### Interface Features
 
-**Deterministic behavior**
+- Genre and mood dropdown menus
+- Adjustable energy slider
+- Acoustic preference checkbox
+- Recommendation count control
+- Interactive recommendation generation
+- Song relevance scores
+- Ranked recommendation cards
+- Expandable scoring explanations
+- Dataset statistics
 
-Identical inputs and an unchanged song catalog produce consistent rankings.
+The application displays 15 songs, 12 genre categories, and 9 mood categories based on the current catalog.
 
-**Modular architecture**
+### Galaxy-Inspired Visualization
 
-The scoring engine, evaluator, and automated tests are maintained as separate components.
+I redesigned the application with a futuristic, space-inspired interface.
 
-**Input validation**
+The visual system includes:
 
-Malformed preferences and invalid song attributes are rejected before being used in scoring.
+- Dark navy and violet gradients
+- Animated starfield layers
+- Moving nebula effects
+- Translucent recommendation panels
+- Violet and cyan accents
+- Holographic orbital rings
+- Energy-responsive glowing sphere
+- Reduced-motion CSS support
 
-**Reproducibility**
+The holographic orb responds visually to the selected energy preference.
 
-The application uses controlled datasets and predefined tests, allowing developers to repeat evaluations.
+Higher energy settings produce faster pulsing animations.
 
-**Reliability reporting**
+This is a 3D-inspired visual effect animated over time, not a literal four-dimensional simulation.
 
-The evaluator produces structured results identifying whether predefined recommendation behaviors passed or failed.
+The orb does not analyze live audio or change recommendation scores.
 
-## 7. Limitations and Potential Biases
+### Interface Design Decisions
 
-### Dataset Representation Bias
+I prioritized readable typography, consistent colors, simple navigation, and visual separation between controls and results.
 
-With only 15 songs, some genres and moods have limited representation.
+The galaxy theme supports the application's identity without replacing the underlying recommendation functionality.
 
-Categories with more available songs have more opportunities to appear in recommendations.
+## 7. System Architecture
 
-### Feature Weighting Bias
+VibeMatch separates the recommendation engine, user interface, evaluation system, and automated tests.
 
-Genre receives a larger contribution than mood and energy similarity in the current scoring system.
+### Main Components
 
-These fixed weights reflect design decisions rather than preferences learned from actual listeners.
+**src/main.py**
 
-Consequently, the system may emphasize certain musical characteristics more strongly than an individual user would prefer.
+Provides the interactive Streamlit dashboard.
 
-### Limited Personalization
+**src/recommender.py**
 
-The application does not learn from listening history, repeated interactions, skipped songs, favorite artists, or user feedback.
+Handles song data, preference validation, scoring, ranking, and explanations.
 
-### Missing Context
+**src/evaluator.py**
 
-Music preferences are influenced by cultural background, personal experiences, lyrics, and emotional associations that cannot be adequately represented by the current numerical features.
+Executes controlled reliability evaluations.
 
-### Evaluation Scope
+**tests/test_recommender.py**
 
-The evaluation catalog contains only three synthetic songs.
+Tests the recommendation engine.
 
-Successful results demonstrate expected behavior on predefined cases, not generalization to thousands of songs or real listeners.
+**tests/test_evaluator.py**
 
-### No Learned Intelligence
+Tests evaluation behavior.
 
-The system uses explicit scoring rules rather than model training, collaborative filtering, or generative AI.
+**tests/test_guardrails.py**
 
-Its reliability evaluator is an engineering extension rather than a learned prediction component.
+Tests input validation and edge cases.
 
-## 8. Reliability Evaluation and Results
+**diagrams/architecture.mmd**
 
-The final project introduces an automated evaluation framework in `src/evaluator.py`.
+Contains the system architecture in Mermaid source format.
 
-The evaluator checks six behaviors:
+### Data Flow
+
+1. The user selects music preferences.
+2. Input validation checks the supplied values.
+3. The recommendation engine compares preferences with songs.
+4. Scores are calculated using predefined weights.
+5. Songs are ranked by relevance.
+6. The dashboard displays recommendations.
+7. Users can examine scoring explanations.
+8. Automated tests and the evaluator verify expected system behavior.
+
+## 8. Reliability Evaluation
+
+The final project introduces a dedicated reliability evaluation system.
+
+The evaluator checks six predefined behaviors:
 
 1. Pop recommendation ranking
 2. Lofi recommendation ranking
@@ -191,163 +228,314 @@ The evaluator checks six behaviors:
 5. Recommendation limit handling
 6. Explanation generation
 
-Additional pytest suites evaluate core recommendation behavior and input guardrails.
+### Automated Testing Results
 
-### Automated Test Results
+During local development, 20 automated tests passed.
 
-The following results were confirmed during local development:
-
-| Test category | Passed |
+| Test Category | Passed |
 |---|---:|
 | Recommendation tests | 4 |
 | Evaluator tests | 8 |
 | Guardrail tests | 8 |
 | **Total** | **20** |
 
-**Observed outcome: 20 of 20 automated tests passed.**
+**Previously verified local result: 20 of 20 tests passed.**
 
-This establishes that the implemented behavior satisfied the tested conditions.
+These results demonstrate expected functionality across the defined tests.
 
-It does not demonstrate 100% real-world recommendation accuracy, user satisfaction, or freedom from defects.
+They do not establish perfect recommendation accuracy or guarantee that the application is free from defects.
 
-### Reliability Observations
+### Commands
 
-During initial development, syntax errors and incorrect package imports prevented the automated test suite from running.
+Run the automated tests:
 
-These issues were corrected by restructuring the code, fixing Python annotations, organizing files into the appropriate directories, and executing tests from the project root.
+```powershell
+python -m pytest -v
+```
 
-After these corrections, the test suite executed successfully.
+Run the reliability evaluator:
 
-A key lesson was that system reliability depends on correct project configuration as well as correct recommendation logic.
+```powershell
+python -m src.evaluator
+```
 
-## 9. Input Guardrails and Error Handling
+Launch the application:
 
-The final application includes validation for user preferences and numerical song characteristics.
+```powershell
+python -m streamlit run src/main.py
+```
 
-Examples include:
+The Streamlit dashboard was also manually tested and confirmed to display personalized recommendations.
 
-- Rejecting missing or empty genre and mood values
-- Rejecting energy values outside the accepted range
-- Rejecting invalid acoustic preference types
-- Rejecting non-finite numerical values
-- Checking required song metadata
-- Validating numeric CSV fields
-- Handling zero and negative recommendation limits
-- Recording validation failures through Python logging
+## 9. Input Validation and Guardrails
 
-Invalid data produces descriptive errors instead of being silently accepted into the scoring process.
+The recommender includes validation to prevent malformed information from being used in scoring.
 
-Logging is intended to assist debugging and reliability evaluation.
+Implemented checks include:
 
-Persistent log storage and comprehensive application-wide exception handling are not currently implemented.
+- Missing genre and mood values
+- Invalid numerical energy values
+- Non-finite numerical values
+- Incorrect acoustic preference types
+- Invalid song metadata
+- Malformed CSV numerical data
+- Zero and negative recommendation limits
 
-## 10. Potential Misuse and Prevention
+Invalid values generate descriptive errors.
 
-Although music recommendations are relatively low risk, the system could still be misused or misrepresented.
+Python logging records validation failures for debugging.
 
-**Manipulated rankings:** A developer could intentionally change scoring weights to favor particular genres or songs without telling users.
+Persistent log storage is not currently implemented.
 
-**Misleading accuracy claims:** A perfect automated test pass rate could be incorrectly presented as proof of perfect recommendation accuracy.
+## 10. Technical Challenges and Solutions
 
-**Inappropriate profiling:** Future versions using listening history could collect or infer sensitive information without adequate user consent.
+### Challenge 1: Python Syntax Errors
 
-**Unvalidated external data:** Integrating untrusted music catalogs could introduce malformed records or misleading recommendations.
+Some source files contained malformed type annotations and indentation problems.
 
-To reduce these risks, the current project uses transparent scoring rules, validation checks, deterministic evaluation, and documented limitations.
+An example was:
 
-The system does not collect personal listening histories, and its evaluation results are described according to the specific conditions tested.
+`List[Song\]`
 
-Future versions should incorporate user consent, data minimization, auditability, and appropriate access controls if personal information is introduced.
+The extra backslash prevented Python from compiling the file.
 
-## 11. Responsible AI Reflection
+**Solution:** I corrected the annotations, repaired indentation, and refactored the recommendation logic into smaller functions.
 
-### What are the limitations or biases in my system?
+### Challenge 2: Python Imports
 
-The most significant limitations are the small dataset, fixed feature weights, and lack of actual listening behavior.
+Running individual test files directly through VS Code produced:
 
-Recommendation rankings depend on the characteristics and priorities selected by the developer.
+`ModuleNotFoundError: No module named 'src'`
 
-My earlier experiment demonstrated how increasing the importance of energy could cause songs from different genres to rank more highly.
+**Solution:** I used package-based commands from the project root.
 
-This showed me that mathematically valid scoring does not necessarily reflect an individual user's actual preferences.
+For example:
 
-### Could my AI system be misused, and how would I prevent it?
+`python -m pytest -v`
 
-The recommender could be modified to favor selected songs, artists, or musical categories while appearing neutral.
+This allowed Python to locate the source package correctly.
 
-I would reduce this risk through transparent scoring rules, documented changes, evaluation across different user profiles, and clear explanations of recommendation factors.
+### Challenge 3: Project Organization
 
-I would also avoid collecting unnecessary personal information and establish privacy protections before adding real user behavior data.
+Some files were accidentally created inside nested directories such as `src/tests`.
 
-### What surprised me while testing reliability?
+**Solution:** I reorganized source files, automated tests, and architecture diagrams into dedicated folders.
 
-I was surprised by how much project configuration affected testing.
+This improved project structure and simplified Git version control.
 
-Several failures were caused by malformed Python syntax, incorrect file placement, and the way Python modules were executed, rather than by the recommendation algorithm itself.
+### Challenge 4: Git Repository Setup
 
-For example, running individual test files through the VS Code debugger caused import errors, while executing pytest from the project root allowed the package imports to resolve.
+An initial push failed with:
 
-The experience showed me that reliable software requires both correct algorithms and a properly configured development environment.
+`error: src refspec HEAD does not match any`
 
-### How did I collaborate with AI?
+The new repository did not contain any commits.
 
-I used AI assistance throughout development to review Python code, identify syntax problems, improve project organization, and develop automated evaluation and testing components.
+**Solution:** I cloned the original Module 3 project, preserved its commit history, connected the new GitHub remote, and pushed the project successfully.
 
-**One suggestion I accepted:**
+### Challenge 5: Streamlit Import Error
 
-I accepted the recommendation to create a dedicated reliability evaluator rather than relying exclusively on basic recommendation tests.
+The initial Streamlit application failed with:
 
-This led to the implementation of `src/evaluator.py`, which evaluates ranking behavior, explanation generation, and edge cases using a controlled dataset.
+`ImportError: attempted relative import with no known parent package`
 
-I accepted this approach because it improved the project's reproducibility and provided measurable evidence of expected behavior.
+**Solution:** I updated the application to use an absolute package import:
 
-**One suggestion I revised:**
+`from src.recommender import load_songs, recommend_songs`
 
-I revised the recommendation to execute Python test files directly through VS Code's Run and Debug interface.
+I also launched Streamlit from the project root.
 
-In practice, this caused `ModuleNotFoundError` exceptions because the project package was not being resolved correctly.
+### Challenge 6: Streamlit Indentation Error
 
-I switched to executing tests from the repository root using `python -m pytest -v` and running the evaluator with `python -m src.evaluator`.
+The application contained an incomplete execution block:
 
-This solution was more compatible with the project structure and easier to reproduce.
+`if __name__ == "__main__":`
 
-**What I learned about AI-assisted development:**
+**Solution:** I completed the application entry point and refactored the original command-line application into an interactive Streamlit dashboard.
 
-AI-generated suggestions still require technical review, execution, and verification.
+### Challenge 7: Dashboard Appearance
 
-I learned to evaluate suggestions against actual error messages, project requirements, and test results rather than assuming that generated code or instructions would work without modification.
+The initial Streamlit dashboard included a white header gap and inconsistent interface colors.
 
-## 12. Future Improvements
+**Solution:** I introduced custom CSS, adjusted the header styling, and developed a consistent galaxy-inspired interface.
 
-Potential enhancements include:
+### Key Engineering Lesson
 
-**Expanded datasets:** Increase genre coverage and the diversity of musical characteristics.
+Correct recommendation logic alone does not guarantee reliable execution.
 
-**Additional scoring features:** Experiment with tempo, valence, danceability, and other audio characteristics.
+Project organization, imports, testing, deployment configuration, and user-interface behavior are also important.
 
-**User-adjustable weights:** Allow listeners to choose whether genre, mood, or energy is most important.
+## 11. Strengths
 
-**Feedback-based recommendations:** Introduce explicit ratings or preference feedback.
+### Explainability
 
-**Recommendation diversity:** Reduce excessive repetition among recommended genres or artists.
+Recommendations include descriptions of the factors contributing to their scores.
 
-**Human evaluation:** Ask listeners to assess relevance and satisfaction using documented criteria.
+### Deterministic Behavior
 
-**Learning-based models:** Compare the current rules-based implementation with a trained recommendation model when sufficient data becomes available.
+Identical inputs and an unchanged catalog produce consistent rankings.
 
-**Improved observability:** Add structured evaluation logs, consistent error reporting, and broader integration testing.
+### Modular Design
 
-## 13. Personal Reflection
+Recommendation logic, testing, evaluation, and presentation are separated into dedicated files.
 
-This project helped me understand how feature selection, weighting, and validation influence recommendation systems.
+### Validation
 
-My initial focus was on generating personalized results. As development progressed, I recognized the importance of testing, debugging, maintaining clean code, and documenting system limitations.
+Invalid user preferences and song attributes are rejected before scoring.
 
-The most valuable improvement was adding a reliability evaluation framework that checks expected behavior rather than relying on recommendations that simply appear reasonable.
+### Reproducibility
 
-I also gained practical experience with Git, Python package organization, exception handling, automated testing, and technical documentation.
+The evaluation framework uses controlled datasets and predefined test cases.
 
-Ultimately, this project reinforced an important principle: a useful AI-related application should not only produce results, but also explain its decisions, handle errors appropriately, and provide evidence that its behavior has been evaluated.
+### Interactive Interface
+
+The Streamlit dashboard provides a visual and accessible way to explore recommendation behavior.
+
+## 12. Limitations and Potential Biases
+
+### Dataset Representation Bias
+
+The dataset contains only 15 songs.
+
+Some genres and moods have fewer examples than others, affecting the variety of available recommendations.
+
+### Feature Weighting Bias
+
+The scoring weights are selected manually.
+
+They reflect developer priorities rather than preferences learned from users.
+
+### Limited Personalization
+
+The application does not learn from listening history, skips, playlists, or repeated user interactions.
+
+### Missing Musical Context
+
+The algorithm does not understand lyrics, personal memories, cultural context, or emotional associations.
+
+### Limited Evaluation Scope
+
+The evaluator uses a synthetic three-song catalog.
+
+Passing the predefined tests does not establish performance across large music catalogs or real-world listeners.
+
+### No Trained Model
+
+VibeMatch uses explicit scoring rules rather than machine learning, collaborative filtering, or generative AI.
+
+Its primary advanced-system enhancement is reliability evaluation.
+
+## 13. Potential Misuse and Prevention
+
+Although music recommendation is relatively low risk, the system could be misused.
+
+### Manipulated Rankings
+
+A developer could secretly adjust weights to favor particular songs or musical genres.
+
+**Prevention:** Maintain transparent scoring rules, document changes, and evaluate recommendations across different profiles.
+
+### Misleading Accuracy Claims
+
+A 100% automated test pass rate could be incorrectly interpreted as 100% recommendation accuracy.
+
+**Prevention:** Clearly distinguish software testing from real-world recommendation effectiveness.
+
+### Privacy Concerns
+
+Future implementations incorporating listening history could expose personal behavioral information.
+
+**Prevention:** Use consent, data minimization, limited retention, and appropriate access controls.
+
+The current version does not collect personal listening histories.
+
+## 14. Responsible AI Reflection
+
+### What Are the Limitations or Biases in My System?
+
+The biggest limitations are the small dataset, manually selected weights, and absence of real user feedback.
+
+My earlier weighting experiment showed that increasing energy importance could cause songs from unrelated genres to rank more highly.
+
+This demonstrated that a mathematically valid ranking does not always reflect individual listener preferences.
+
+### Could My System Be Misused?
+
+The scoring algorithm could be manipulated to favor selected genres or songs.
+
+I would reduce this risk through transparent scoring, documented changes, and evaluation across different profiles.
+
+I would also introduce privacy protections before collecting user behavior data.
+
+### What Surprised Me During Reliability Testing?
+
+One of my biggest discoveries was that technical failures were not always caused by the recommendation algorithm.
+
+Several problems came from Python syntax, package imports, file organization, and Streamlit execution.
+
+Correcting these issues demonstrated why reproducible execution and project structure are essential to software reliability.
+
+### How Did I Collaborate With AI?
+
+I used AI assistance to review code, troubleshoot errors, improve project organization, and build reliability evaluation components.
+
+**One Suggestion I Accepted**
+
+I accepted the recommendation to create a dedicated reliability evaluator.
+
+This resulted in `src/evaluator.py`, which tests ranking behavior, explanations, and edge cases using a controlled dataset.
+
+I accepted this suggestion because it made the system easier to evaluate and provided measurable test results.
+
+**One Suggestion I Revised**
+
+I revised the approach of executing Python test files individually through VS Code's debugging controls.
+
+This approach caused package import failures.
+
+Instead, I ran tests from the repository root using:
+
+`python -m pytest -v`
+
+I also ran the evaluator using:
+
+`python -m src.evaluator`
+
+These commands were more reliable and reproducible.
+
+### What I Learned About AI-Assisted Development
+
+AI-generated code and suggestions still require manual review.
+
+I learned to verify proposed solutions against actual error messages, project requirements, and test results rather than assuming that generated code would work immediately.
+
+## 15. Future Improvements
+
+Potential future enhancements include:
+
+- Expanding the song catalog
+- Improving genre and mood representation
+- Adding tempo, valence, and danceability weighting
+- Allowing users to adjust scoring weights
+- Collecting voluntary recommendation feedback
+- Evaluating recommendation diversity
+- Testing the Streamlit interface automatically
+- Improving logging and error reporting
+- Comparing rule-based recommendations with trained models
+
+## 16. Personal Reflection
+
+This project began as a simple experiment in personalized music recommendations.
+
+As development progressed, I learned how recommendation algorithms depend on feature selection, weighting, and user preferences.
+
+Extending the application taught me the importance of maintainable code, reliable execution, automated testing, input validation, and technical documentation.
+
+Developing the futuristic Streamlit interface also allowed me to explore user-interface design while preserving the recommendation engine's functionality.
+
+The most valuable lesson was learning to distinguish between a system that runs successfully, a system that passes automated tests, and a system whose recommendations users actually value.
+
+This project strengthened my practical experience with Python, Git, Streamlit, software testing, debugging, and applied AI system design.
 
 ---
 
@@ -355,4 +543,5 @@ Ultimately, this project reinforced an important principle: a useful AI-related 
 
 **Developer:** Joanne Jongeling  
 **Course:** CodePath AI110  
-**Project:** Applied AI Music Recommender
+**Project:** VibeMatch Applied AI Music Recommender
+
